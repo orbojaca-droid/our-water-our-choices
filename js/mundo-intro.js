@@ -1,10 +1,11 @@
 /**
  * @file mundo-intro.js
- * @description Diapositiva 0 de "Our Water, Our Choices" (v3): sin globo. Un bloque de tierra a todo el ancho y pegado al borde inferior
- * sube desde abajo: montaña alta con páramo de frailejones, río que serpentea, represa y lago, zona rural (casas, cultivos, cerdos),
+ * @description Diapositiva 0 de "Our Water, Our Choices" (v4): sin globo ni rótulos. Un bloque de tierra a todo el ancho aparece en píxeles (máscara de celdas)
+ * y ya con su forma final muestra: montaña alta con páramo de frailejones, río que serpentea, represa y lago, zona rural (casas, cultivos, cerdos),
  * una pequeña transición, y una ciudad urbana con una fábrica y un centro de datos junto al mar. Varias gotas recorren el ciclo del agua
- * al mismo tiempo, conectadas (evaporación, nubes, lluvia, escorrentía, embalse, vertedero, río, riego, infiltración, agua subterránea,
- * bombeo, retorno y mar). Rótulos oscuros nombran lugares y píldoras turquesa nombran los procesos. Título y nombre arriba a la derecha.
+ * al mismo tiempo (26 gotas pequeñas; evaporación, nubes, lluvia, escorrentía, embalse, vertedero, río, riego, infiltración, agua subterránea,
+ * bombeo, retorno y mar). Gotas color óxido son vertidos: salen de tubos subterráneos (campo, ciudad, fábrica, centro de datos), el río nace limpio y
+ * se tiñe aguas abajo de cada boca, y varias bocas en la orilla del mar generan manchas oscuras. Fauna y gente por toda la escena. Título y nombre arriba a la derecha.
  *
  * Todo se dibuja con SVG generado por script (cero librerías, cero imágenes externas, 100% offline).
  * Deriva de la skill `mundo-isometrico-organico`, con proyección oblicua (vista de diorama). Diseño aprobado en boceto/boceto_diapositiva0_ciclo6.html.
@@ -42,6 +43,23 @@
 
   /* ---------- terreno ---------- */
   var RIVER = [[2.35, 4.5], [2.85, 4.3], [2.6, 4.0], [3.1, 3.85], [3.0, 3.6], [3.6, 3.45], [4.5, 3.2], [5.3, 3.0], [5.9, 2.85], [6.9, 3.35], [8.0, 2.85], [9.2, 3.3], [10.4, 2.65], [11.6, 3.05], [12.4, 2.8], [13.4, 2.8]];
+  /** Punto del río (mundo) más cercano en x a la abscisa dada. */
+  function riverAtX(x) {
+    var rs = crPts2(RIVER, 150), best = rs[0], i;
+    for (i = 1; i < rs.length; i++) if (Math.abs(rs[i][0] - x) < Math.abs(best[0] - x)) best = rs[i];
+    return best;
+  }
+  /* focos de vertido: origen, tubo subterráneo (puntos intermedios) y boca donde descarga; sea = descarga directa en el mar */
+  var SRC = [
+    { pt: [5.55, 4.4], via: [[6.15, 3.65]], jx: 6.15 },
+    { pt: [10.15, 4.6], via: [], jx: 10.15 },
+    { pt: [11.65, 4.6], via: [], jx: 11.65 },
+    { pt: [10.15, 1.9], via: [], jx: 10.55 },
+    { pt: [11.65, 1.75], via: [[12.3, 1.4]], sea: [13.0, 1.4] },
+    { pt: [11.9, 5.2], via: [[12.4, 5.1]], sea: [13.0, 5.0] },
+    { pt: [11.2, 1.2], via: [[12.0, 0.7]], sea: [13.0, 0.6] },
+    { pt: [11.9, 4.2], via: [[12.4, 4.0]], sea: [13.0, 4.0] }
+  ];
   /** @BAUTO_REFACTOR 2026-11-02 @Modulo: AGUA_PRESENTACION / mundo-intro @Propósito: Distancia de un punto al trazado del río. @Capa: Funcional @Riesgo_Evaluado: Bajo - dibujo aislado sin consumidores externos */
   function riverDist(x, y) {
     var best = 9;
@@ -173,6 +191,17 @@
     [[0, 3.9, 4, 2], [3.8, 8.2, 8, 4.6], [8.1, 13, 11, 6.4]].forEach(function (z) { var sl = rp.filter(function (p) { return p[0] >= z[0] && p[0] <= z[1]; }); segs(sl, "#5fb0c4", z[2]); segs(sl, "#9bd6e1", z[3]); });
     segs(rp.filter(function (p) { return p[0] < 3.4; }), "#ffffff", 2.4, ' stroke-opacity=".85" stroke-dasharray="2 6" class="mi-flow"');
     segs(rp, "#ffffff", 2, ' stroke-opacity=".7" stroke-dasharray="4 12" class="mi-flow"');
+    /* el río nace limpio y se tiñe de óxido aguas abajo de cada boca de desagüe (los tintes se suman) */
+    [6.15, 10.15, 11.65].forEach(function (x0) {
+      segs(rp.filter(function (p) { return p[0] >= x0; }), "#b8532b", 5, ' stroke-opacity=".3" class="mi-pollute"');
+    });
+    /* tubos subterráneos: trazo punteado tenue desde cada foco hasta su boca; las bocas se dibujan más abajo con los objetos */
+    var MOUTHS = [];
+    SRC.forEach(function (S) {
+      var end = S.sea ? S.sea : riverAtX(S.jx), c = [S.pt].concat(S.via, [end]);
+      segs(c, "#6e4429", 2.6, ' stroke-opacity=".5" stroke-dasharray="3 7"');
+      MOUTHS.push(end);
+    });
 
     if (objs) {
       /* GRANJA (zona central): parcelas al norte y al sur del río, canales, pivote de riego, pasto con vacas, granero */
@@ -505,6 +534,105 @@
       [[8.7, 4.34], [9.1, 4.66], [9.6, 4.34], [10.0, 4.66], [10.4, 4.34], [10.8, 4.66], [11.3, 4.34], [11.6, 4.66], [8.7, 1.54], [9.2, 1.86], [9.7, 1.54], [10.2, 1.86], [10.7, 1.54], [11.1, 1.86], [8.9, 3.7], [9.9, 3.85], [10.6, 3.75], [11.2, 5.2], [9.4, 5.0], [10.9, 4.0], [8.55, 4.5], [10.15, 4.5], [11.5, 1.7]].forEach(function (c, i) {
         put(c[1], person(c[0], c[1], { shirt: PSH[i % 7], skin: PSK[i % 4], k: 1.0 + 0.12 * (i % 3), tool: i % 5 === 0 ? "bag" : undefined, skirt: i % 4 === 1 }));
       });
+      /* ---------- FAUNA Y GENTE EXTRA: oso de anteojos, venados, caballos, gatos, perros, garzas, peces y aves de varios tipos ---------- */
+      /** @BAUTO_REFACTOR 2026-11-03 @Modulo: AGUA_PRESENTACION / mundo-intro @Propósito: Oso de anteojos del páramo (pelaje oscuro, antifaz crema). @Capa: Funcional @Riesgo_Evaluado: Bajo - dibujo aislado sin consumidores externos */
+      function bear(x, y) {
+        var p = Pz(x, y, Hz(x, y)), c = "#2f2a26";
+        return big(x, y, shadowE(p, 16, 4.4) + '<g stroke="' + INK + '" stroke-width=".8" stroke-linecap="round"><line x1="' + f1(p[0] - 9) + '" y1="' + f1(p[1] - 7) + '" x2="' + f1(p[0] - 9) + '" y2="' + f1(p[1]) + '" stroke-width="3.4" stroke="' + c + '"/><line x1="' + f1(p[0] + 8) + '" y1="' + f1(p[1] - 7) + '" x2="' + f1(p[0] + 8) + '" y2="' + f1(p[1]) + '" stroke-width="3.4" stroke="' + c + '"/>' +
+          '<ellipse cx="' + f1(p[0]) + '" cy="' + f1(p[1] - 12) + '" rx="14" ry="8.4" fill="' + c + '"/><ellipse cx="' + f1(p[0] + 7) + '" cy="' + f1(p[1] - 9) + '" rx="4.4" ry="3.4" fill="#e8d9b8"/>' +
+          '<circle cx="' + f1(p[0] + 14) + '" cy="' + f1(p[1] - 15) + '" r="6.4" fill="' + c + '"/><circle cx="' + f1(p[0] + 11) + '" cy="' + f1(p[1] - 21) + '" r="2.4" fill="' + c + '"/><circle cx="' + f1(p[0] + 17.5) + '" cy="' + f1(p[1] - 21) + '" r="2.4" fill="' + c + '"/>' +
+          '<ellipse cx="' + f1(p[0] + 19) + '" cy="' + f1(p[1] - 12.6) + '" rx="3.6" ry="2.7" fill="#e8d9b8"/><circle cx="' + f1(p[0] + 21) + '" cy="' + f1(p[1] - 13.4) + '" r="1.2" fill="' + c + '"/>' +
+          '<circle cx="' + f1(p[0] + 13) + '" cy="' + f1(p[1] - 16.4) + '" r="3" fill="none" stroke="#efe3c6" stroke-width="1.5"/><circle cx="' + f1(p[0] + 18) + '" cy="' + f1(p[1] - 16.4) + '" r="3" fill="none" stroke="#efe3c6" stroke-width="1.5"/></g>', 0.8);
+      }
+      /** @BAUTO_REFACTOR 2026-11-03 @Modulo: AGUA_PRESENTACION / mundo-intro @Propósito: Caballo de la zona rural en el color indicado. @Capa: Funcional @Riesgo_Evaluado: Bajo - dibujo aislado sin consumidores externos */
+      function horse(x, y, col) {
+        var p = Pz(x, y, Hz(x, y)), c = col || "#8a5a3a", m = "#3a2a20", g = shadowE(p, 20, 4.8) + '<g stroke="' + INK + '" stroke-width=".8" stroke-linecap="round" stroke-linejoin="round">';
+        [-10, -6, 7, 11].forEach(function (dx) { g += '<line x1="' + f1(p[0] + dx) + '" y1="' + f1(p[1] - 12) + '" x2="' + f1(p[0] + dx) + '" y2="' + f1(p[1]) + '" stroke-width="2.4" stroke="' + c + '"/>'; });
+        g += '<ellipse cx="' + f1(p[0]) + '" cy="' + f1(p[1] - 16) + '" rx="15" ry="7" fill="' + c + '"/>' +
+          '<path d="M' + f1(p[0] + 9) + "," + f1(p[1] - 19) + " L" + f1(p[0] + 17) + "," + f1(p[1] - 35) + " L" + f1(p[0] + 23) + "," + f1(p[1] - 32) + " L" + f1(p[0] + 15) + "," + f1(p[1] - 13) + 'Z" fill="' + c + '"/>' +
+          '<ellipse cx="' + f1(p[0] + 23) + '" cy="' + f1(p[1] - 33.5) + '" rx="6.4" ry="3.2" fill="' + c + '" transform="rotate(28 ' + f1(p[0] + 23) + " " + f1(p[1] - 33.5) + ')"/>' +
+          '<path d="M' + f1(p[0] + 10) + "," + f1(p[1] - 30) + " q3,-6 8,-7" + '" fill="none" stroke="' + m + '" stroke-width="3"/><path d="M' + f1(p[0] - 14) + "," + f1(p[1] - 18) + " q-7,7 -3,16" + '" fill="none" stroke="' + m + '" stroke-width="3"/></g>';
+        return big(x, y, g, 0.6);
+      }
+      /** @BAUTO_REFACTOR 2026-11-03 @Modulo: AGUA_PRESENTACION / mundo-intro @Propósito: Gato de ciudad sentado con la cola levantada. @Capa: Funcional @Riesgo_Evaluado: Bajo - dibujo aislado sin consumidores externos */
+      function cat(x, y, col) {
+        var p = Pz(x, y, Hz(x, y)), c = col || "#d9915a";
+        return shadowE(p, 7, 2.2) + '<g stroke="' + INK + '" stroke-width=".7" stroke-linecap="round"><path d="M' + f1(p[0] - 5) + "," + f1(p[1] - 3) + " q-5,-3 -2,-10" + '" fill="none" stroke="' + c + '" stroke-width="2.2"/>' +
+          '<ellipse cx="' + f1(p[0]) + '" cy="' + f1(p[1] - 4) + '" rx="5.4" ry="3.8" fill="' + c + '"/><circle cx="' + f1(p[0] + 5) + '" cy="' + f1(p[1] - 8) + '" r="3" fill="' + c + '"/>' +
+          '<path d="M' + f1(p[0] + 3) + "," + f1(p[1] - 10) + " l.6,-3.4 l2,2.2Z M" + f1(p[0] + 5.4) + "," + f1(p[1] - 10.4) + " l2,-2.6 l.6,3.4Z" + '" fill="' + c + '"/></g>';
+      }
+      /** @BAUTO_REFACTOR 2026-11-03 @Modulo: AGUA_PRESENTACION / mundo-intro @Propósito: Garza blanca de pie en la orilla del río. @Capa: Funcional @Riesgo_Evaluado: Bajo - dibujo aislado sin consumidores externos */
+      function heron(x, y) {
+        var p = Pz(x, y, Hz(x, y));
+        return shadowE(p, 8, 2.4) + '<g stroke="' + INK + '" stroke-width=".7" stroke-linecap="round"><line x1="' + f1(p[0] - 1) + '" y1="' + f1(p[1] - 13) + '" x2="' + f1(p[0] - 1) + '" y2="' + f1(p[1]) + '" stroke="#9a8f7f" stroke-width="1.4"/><line x1="' + f1(p[0] + 2) + '" y1="' + f1(p[1] - 13) + '" x2="' + f1(p[0] + 2) + '" y2="' + f1(p[1]) + '" stroke="#9a8f7f" stroke-width="1.4"/>' +
+          '<ellipse cx="' + f1(p[0]) + '" cy="' + f1(p[1] - 19) + '" rx="5.6" ry="7.6" fill="#f6f3ee"/><path d="M' + f1(p[0] + 3) + "," + f1(p[1] - 24) + " q7,-6 3,-14" + '" fill="none" stroke="#f6f3ee" stroke-width="3.2"/><circle cx="' + f1(p[0] + 6.4) + '" cy="' + f1(p[1] - 39) + '" r="2.6" fill="#f6f3ee"/><path d="M' + f1(p[0] + 8.4) + "," + f1(p[1] - 39.6) + ' l8,1.2 l-8,1.6Z" fill="#e8b84a"/></g>';
+      }
+      /** @BAUTO_REFACTOR 2026-11-03 @Modulo: AGUA_PRESENTACION / mundo-intro @Propósito: Ave en vuelo (guacamaya, tucán, colibrí, paloma, gaviota, golondrina o loro) con deriva suave. @Capa: Funcional @Riesgo_Evaluado: Bajo - dibujo aislado sin consumidores externos */
+      var BIRD = {
+        macaw: { b: "#d8402f", h: "#d8402f", t: "#2f6fb5", tl: 10, w: "#2f6fb5", s: "#f2c84b", bk: "#efe6d2", bl: 3.4 },
+        toucan: { b: "#2b2622", h: "#2b2622", t: "#2b2622", tl: 3, w: "#3a342f", s: "#f2d24a", bk: "#e8892f", bl: 9 },
+        hummer: { b: "#3f9a6a", h: "#2f7f55", t: "#2f7f55", tl: 3, w: "#cfe3d6", s: "", bk: "#3d352c", bl: 8 },
+        pigeon: { b: "#a3abb0", h: "#7f8b92", t: "#8a949a", tl: 4, w: "#838d93", s: "", bk: "#e8a24a", bl: 2.4 },
+        gull: { b: "#fbf8f2", h: "#fbf8f2", t: "#fbf8f2", tl: 4, w: "#d3d8da", s: "", bk: "#e8a24a", bl: 3.4 },
+        swallow: { b: "#2f4a63", h: "#2f4a63", t: "#2f4a63", tl: 8, w: "#25384b", s: "", bk: "#2b2622", bl: 2 },
+        parrot: { b: "#6fa65a", h: "#6fa65a", t: "#4f8a45", tl: 6, w: "#4f8a45", s: "#e8c34a", bk: "#e8a24a", bl: 2.8 }
+      };
+      function flyer(wx, wy, wz, k, kind, delay) {
+        var T = BIRD[kind], p = Pz(wx, wy, wz);
+        return '<g transform="translate(' + f1(p[0]) + " " + f1(p[1]) + ") scale(" + k + ')"><g class="mi-float" style="animation-delay:' + delay + 's">' +
+          '<path d="M-6,0 L-' + (6 + T.tl) + ',3 L-' + (6 + T.tl) + ',-2Z" fill="' + T.t + '" stroke="' + INK + '" stroke-width=".7"/>' +
+          '<ellipse cx="0" cy="0" rx="7.5" ry="3.6" fill="' + T.b + '" stroke="' + INK + '" stroke-width=".7"/><circle cx="7.6" cy="-1.2" r="3" fill="' + T.h + '" stroke="' + INK + '" stroke-width=".7"/>' +
+          '<path d="M9.8,-1.8 l' + T.bl + ',1.4 l-' + T.bl + ',1.8Z" fill="' + T.bk + '" stroke="' + INK + '" stroke-width=".5"/>' +
+          '<path d="M-1,-2 Q-4,-16 -13,-13 Q-8,-6 3,-1Z" fill="' + T.w + '" stroke="' + INK + '" stroke-width=".7"/>' +
+          (T.s ? '<path d="M-3,-6 Q-6,-12 -10,-11" fill="none" stroke="' + T.s + '" stroke-width="1.6" stroke-linecap="round"/>' : "") + "</g></g>";
+      }
+      /** Las aves van en la última fila: siempre quedan por encima de árboles, casas y edificios. */
+      function sky(s) { buckets[NY - 1].o.push(s); }
+      var up = function (x, y, d) { return Hz(x, y) + d; };
+      sky(flyer(1.4, 2.9, up(1.4, 2.9, 1.1), 1.1, "macaw", -1) + flyer(1.75, 3.15, up(1.75, 3.15, 1.0), 1.0, "macaw", -2.5) + flyer(0.7, 3.6, up(0.7, 3.6, 1.2), 1.0, "parrot", -4) + flyer(1.1, 2.3, up(1.1, 2.3, 0.9), 0.9, "parrot", -3));
+      sky(flyer(4.9, 5.0, up(4.9, 5.0, 0.9), 1.1, "toucan", -2) + flyer(0.95, 1.9, up(0.95, 1.9, 0.9), 1.0, "toucan", -3.5));
+      sky(flyer(2.5, 3.8, up(2.5, 3.8, 0.4), 1.0, "hummer", -0.5) + flyer(3.25, 4.9, up(3.25, 4.9, 0.4), 1.0, "hummer", -1.8) + flyer(2.0, 5.0, up(2.0, 5.0, 0.4), 0.9, "hummer", -3));
+      sky(flyer(6.9, 2.5, up(6.9, 2.5, 1.3), 1.0, "swallow", -1) + flyer(7.5, 4.0, up(7.5, 4.0, 1.4), 1.0, "swallow", -2.2) + flyer(6.2, 1.7, up(6.2, 1.7, 1.0), 1.0, "parrot", -3.1) + flyer(5.7, 5.2, up(5.7, 5.2, 0.9), 1.0, "swallow", -0.4));
+      sky(flyer(9.9, 3.6, up(9.9, 3.6, 0.6), 1.0, "pigeon", -1) + flyer(10.6, 1.2, up(10.6, 1.2, 0.95), 1.0, "pigeon", -2) + flyer(9.0, 5.1, up(9.0, 5.1, 1.05), 1.0, "pigeon", -3) + flyer(11.4, 3.5, up(11.4, 3.5, 0.5), 0.9, "pigeon", -1.5) + flyer(8.7, 2.8, up(8.7, 2.8, 0.55), 0.9, "pigeon", -2.7));
+      sky(flyer(13.6, 3.1, 1.5, 1.1, "gull", -1) + flyer(13.0, 0.8, 1.8, 1.0, "gull", -2) + flyer(13.7, 2.0, 1.1, 1.0, "gull", -3) + flyer(13.3, 4.4, 1.6, 1.0, "gull", -0.6) + flyer(12.7, 5.2, 1.4, 0.9, "gull", -3.6));
+      /* peces del embalse y del mar, patos y garzas */
+      /** @BAUTO_REFACTOR 2026-11-03 @Modulo: AGUA_PRESENTACION / mundo-intro @Propósito: Pez visto bajo la superficie del agua. @Capa: Funcional @Riesgo_Evaluado: Bajo - dibujo aislado sin consumidores externos */
+      function fishAt(x, y, lvl, col, k) {
+        var q = Pz(x, y, lvl - 0.02);
+        buckets[row(y)].t.push('<g opacity=".85" transform="translate(' + f1(q[0]) + " " + f1(q[1]) + ") scale(" + k + ')"><ellipse cx="0" cy="0" rx="8" ry="3.2" fill="' + col + '"/><path d="M-7,0 l-6,-4 v8Z" fill="' + col + '"/><circle cx="4.5" cy="-.6" r=".9" fill="#fff"/></g>');
+      }
+      [[2.5, 2.5], [2.9, 3.4], [3.3, 2.3], [2.2, 3.2], [3.6, 3.15], [2.8, 2.9], [3.1, 3.7]].forEach(function (f, i) { fishAt(f[0], f[1], LW, i % 2 ? "#c8745a" : "#2f7f99", 0.9); });
+      [[13.2, 4.2], [13.7, 2.7], [13.4, 1.8], [13.8, 4.0], [13.1, 0.6], [13.6, 5.7]].forEach(function (f, i) { fishAt(f[0], f[1], WL, i % 2 ? "#2f7f99" : "#e8a24a", 1.0); });
+      put(3.0, duck(2.8, 2.5) + duck(2.45, 3.3) + duck(3.05, 3.9));
+      put(2.7, heron(8.05, 2.55) + heron(5.5, 3.25));
+      put(3.2, heron(3.95, 2.1));
+      /* fauna del páramo, el campo y la ciudad */
+      put(5.45, bear(3.35, 5.45));
+      put(5.0, deer(3.0, 5.05));
+      put(1.95, horse(7.85, 1.95, "#8a5a3a") + horse(7.9, 1.05, "#efe9df"));
+      put(5.3, horse(5.2, 5.55, "#b87a45"));
+      put(4.05, horse(7.1, 4.1, "#5b3f2a"));
+      put(3.3, person(7.6, 3.4, { shirt: "#7fa263", skin: SK[1], hat: "straw" }));
+      /* personas extra: páramo, bote en el embalse, campo, orilla del mar y ciudad */
+      put(4.55, person(4.3, 4.55, { shirt: "#c8745a", skin: SK[2], hat: "scarf", tool: "bag" }));
+      (function () {
+        var b = Pz(3.0, 2.95, LW + 0.03);
+        put(2.95, '<ellipse cx="' + f1(b[0]) + '" cy="' + f1(b[1] + 3) + '" rx="20" ry="4" fill="rgba(70,56,44,.16)"/><path d="M' + f1(b[0] - 18) + "," + f1(b[1] - 3) + " L" + f1(b[0] + 18) + "," + f1(b[1] - 3) + " L" + f1(b[0] + 12) + "," + f1(b[1] + 4) + " L" + f1(b[0] - 12) + "," + f1(b[1] + 4) + 'Z" fill="#c8745a" stroke="' + INK + '" stroke-width=".8"/>' +
+          '<rect x="' + f1(b[0] - 3) + '" y="' + f1(b[1] - 15) + '" width="7" height="12" rx="3" fill="#7fa263" stroke="' + INK + '" stroke-width=".7"/><circle cx="' + f1(b[0] + 0.5) + '" cy="' + f1(b[1] - 19) + '" r="3.4" fill="' + SK[2] + '" stroke="' + INK + '" stroke-width=".7"/><line x1="' + f1(b[0] + 4) + '" y1="' + f1(b[1] - 12) + '" x2="' + f1(b[0] + 20) + '" y2="' + f1(b[1] - 26) + '" stroke="#7a5a3a" stroke-width="1.4"/>');
+      })();
+      put(4.2, person(5.3, 4.2, { shirt: "#e2c27a", skin: SK[3], k: 0.8 }) + person(6.0, 4.5, { shirt: "#6fa3b5", skin: SK[1], skirt: true, skirtColor: "#c8745a", tool: "bucket" }));
+      put(1.5, person(5.5, 1.1, { shirt: "#c8745a", skin: SK[1], k: 0.8 }) + person(6.2, 1.6, { shirt: "#9bb58a", skin: SK[2], hat: "straw", tool: "hoe" }) + dog(5.9, 1.05));
+      put(3.9, person(12.4, 3.9, { shirt: "#6fa3b5", skin: SK[0] }) + person(12.65, 4.15, { shirt: "#e2c27a", skin: SK[2], k: 0.8 }) + dog(12.2, 4.05));
+      [[9.0, 4.7], [9.3, 4.35], [9.75, 4.66], [10.3, 4.64], [10.6, 4.36], [11.0, 4.35], [11.45, 4.66], [8.9, 1.84], [9.45, 1.56], [9.95, 1.84], [10.45, 1.56], [10.9, 1.84], [11.4, 1.56], [9.55, 3.8], [10.25, 3.7], [10.8, 3.9], [8.8, 5.3], [9.6, 5.35], [10.5, 5.4], [9.2, 0.65], [10.0, 0.62]].forEach(function (c, i) {
+        put(c[1], person(c[0], c[1], { shirt: PSH[(i + 2) % 7], skin: SK[(i + 1) % 4], k: 0.95 + 0.1 * (i % 3), tool: i % 6 === 0 ? "bag" : undefined, skirt: i % 5 === 2 }));
+      });
+      [[9.1, 4.62, "#d9915a"], [10.5, 4.4, "#8a8173"], [9.35, 1.7, "#e9d9bd"], [10.7, 1.8, "#3d352c"], [9.9, 3.62, "#c8a37a"], [8.75, 5.1, "#d9915a"], [11.2, 5.3, "#8a8173"]].forEach(function (c) { put(c[1], cat(c[0], c[1], c[2])); });
+      put(4.7, dog(9.5, 4.7) + dog(10.9, 4.68)); put(1.85, dog(9.8, 1.86) + dog(11.2, 1.88)); put(3.75, dog(10.4, 3.75));
+      /* bocas de desagüe de concreto con chorro y mancha óxido (las del río y la del centro de datos en el mar) */
+      MOUTHS.forEach(function (m, k) {
+        var z = Math.max(Hz(m[0], m[1]), WL) + 0.02, q = Pz(m[0], m[1], z);
+        put(m[1], '<ellipse cx="' + f1(q[0]) + '" cy="' + f1(q[1] + 3) + '" rx="13" ry="3.6" fill="#b8532b" fill-opacity=".55" class="mi-pollute"/><rect x="' + f1(q[0] - 7) + '" y="' + f1(q[1] - 7) + '" width="14" height="9" rx="2" fill="#b9b0a3" stroke="' + INK + '" stroke-width=".9"/><ellipse cx="' + f1(q[0]) + '" cy="' + f1(q[1] - 2.5) + '" rx="3.6" ry="2.6" fill="#3a2a20"/><path class="mi-flow" d="M' + f1(q[0]) + "," + f1(q[1]) + " q2,6 0,10" + '" fill="none" stroke="#b8532b" stroke-width="3" stroke-dasharray="3 4" stroke-linecap="round"/>');
+      });
       /* torre de agua al fondo, entre la zona rural y la ciudad */
       (function () {
         var p = Pz(7.6, 5.95, Hz(7.6, 5.95)), s = shadowE(p, 20, 6);
@@ -575,6 +703,15 @@
       })();
       var warm = [], q2;
       for (q2 = 0; q2 < 40; q2++) { var an4 = (q2 / 40) * Math.PI * 2; warm.push(Pz(13.5 + 0.38 * Math.cos(an4), 2.0 + 0.95 * Math.sin(an4), WL + 0.02)); }
+      var mouth = [], q3;
+      for (q3 = 0; q3 < 30; q3++) { var an5 = (q3 / 30) * Math.PI * 2; mouth.push(Pz(13.35 + 0.62 * Math.cos(an5), 2.85 + 1.25 * Math.sin(an5), WL + 0.03)); }
+      SRC.forEach(function (S, k) {
+        if (!S.sea) return;
+        var st2 = [], q4;
+        for (q4 = 0; q4 < 24; q4++) { var an6 = (q4 / 24) * Math.PI * 2; st2.push(Pz(S.sea[0] + 0.4 + 0.42 * Math.cos(an6), S.sea[1] + 0.55 * Math.sin(an6), WL + 0.03)); }
+        buckets[row(S.sea[1] - 0.3)].t.push('<polygon class="mi-stain" style="animation-delay:' + (-k * 0.9) + 's" points="' + st2.map(pt).join(" ") + '" fill="#4a2818" fill-opacity=".55" stroke="none"/>');
+      });
+      buckets[row(1.7)].t.push('<polygon class="mi-stain" points="' + mouth.map(pt).join(" ") + '" fill="#4a2818" fill-opacity=".55" stroke="none"/>');
       buckets[row(1.1)].t.push('<polygon class="mi-warm" points="' + warm.map(pt).join(" ") + '" fill="#e8895f" fill-opacity=".6"/>');
     } else {
       /* en el cuadro de transición solo se insinúan los campos como manchas planas */
@@ -680,32 +817,16 @@
 
 
 
-  /** @BAUTO_REFACTOR 2026-11-02 @Modulo: AGUA_PRESENTACION / mundo-intro @Propósito: Píldora turquesa con el nombre de un proceso del ciclo. @Capa: Funcional @Riesgo_Evaluado: Bajo - dibujo aislado sin consumidores externos */
-  function tagSvg(p, text, side) {
-    /* proceso del ciclo: píldora turquesa con letra blanca */
-    var w = text.length * 12.6 + 26, x = side === "l" ? p[0] - 26 - w : side === "b" ? p[0] - w / 2 : p[0] + 26, y = side === "b" ? p[1] + 18 : p[1] - 17;
-    return '<g><rect x="' + f1(x) + '" y="' + f1(y) + '" width="' + f1(w) + '" height="34" rx="17" fill="#2f7f99" stroke="#fff" stroke-width="2.4"/>' +
-      '<text x="' + f1(x + w / 2) + '" y="' + f1(y + 23.5) + '" text-anchor="middle" font-size="21" font-weight="700" fill="#fff">' + text + "</text></g>";
-  }
-  /** @BAUTO_REFACTOR 2026-11-02 @Modulo: AGUA_PRESENTACION / mundo-intro @Propósito: Rótulo oscuro con alfiler que nombra un lugar. @Capa: Funcional @Riesgo_Evaluado: Bajo - dibujo aislado sin consumidores externos */
-  function placeSvg(p, text, side) {
-    /* lugar: rótulo oscuro de esquinas rectas con alfiler */
-    var w = text.length * 12 + 30, h = 30, y0 = side === "b" ? p[1] + 24 : p[1] - 24, y = side === "b" ? y0 : y0 - h, x = p[0] - w / 2;
-    return '<line x1="' + f1(p[0]) + '" y1="' + f1(p[1]) + '" x2="' + f1(p[0]) + '" y2="' + f1(y0) + '" stroke="#3d352c" stroke-width="2.2"/>' +
-      '<circle cx="' + f1(p[0]) + '" cy="' + f1(p[1]) + '" r="5.5" fill="#3d352c" stroke="#fffdf8" stroke-width="2"/>' +
-      '<rect x="' + f1(x) + '" y="' + f1(y) + '" width="' + f1(w) + '" height="' + h + '" rx="4" fill="#3d352c"/>' +
-      '<text x="' + f1(p[0]) + '" y="' + f1(y + 20.5) + '" text-anchor="middle" font-size="16" font-weight="700" letter-spacing="1.8" fill="#fbf9f4">' + text.toUpperCase() + "</text>";
-  }
-
-  /* ---------- animación: el bloque sube y varias gotas recorren un ciclo conectado ---------- */
-  var RISE = 5.2, NOMINAL = 36;
+  /* ---------- animación: el bloque aparece en píxeles y después muchas gotas pequeñas recorren el ciclo ---------- */
+  var REVEAL = 3.2, CELL = 48, NOMINAL = 36;
   var W = function (x, y, dz) { return Pz(x, y, lastHz(x, y) + dz); };
   var A = function (x, y, z) { return Pz(x, y, z); };
+  var WATER = { fill: "#3f93ad", stroke: "#fff" }, VAPOR = { fill: "#fff", stroke: "#3f93ad" }, DIRTY = { fill: "#b8532b", stroke: "#f6e4d4" };
 
   /** Curva suave (Catmull-Rom) por los puntos del río en coordenadas del mundo. */
   function crPts2(P0, n) {
     var out = [];
-    /** @BAUTO_REFACTOR 2026-11-02 @Modulo: AGUA_PRESENTACION / mundo-intro @Propósito: Función auxiliar de dibujo o animación de la escena. @Capa: Funcional @Riesgo_Evaluado: Bajo - dibujo aislado sin consumidores externos */
+    /** @BAUTO_REFACTOR 2026-11-03 @Modulo: AGUA_PRESENTACION / mundo-intro @Propósito: Interpolación Catmull-Rom de un tramo. @Capa: Técnica @Riesgo_Evaluado: Bajo - dibujo aislado sin consumidores externos */
     function cr(a, b, c, d3, t) { return 0.5 * (2 * b + (-a + c) * t + (2 * a - 5 * b + 4 * c - d3) * t * t + (-a + 3 * b - 3 * c + d3) * t * t * t); }
     for (var m = 0; m <= n; m++) {
       var u = (m / n) * (P0.length - 1), i0 = Math.min(P0.length - 2, Math.floor(u)), f = u - i0;
@@ -715,133 +836,176 @@
     return out;
   }
 
-  /* etapas del ciclo: ruta 1 (superficie) y ruta 2 (riego, acuífero y bombeo); cada gota lleva el nombre de su etapa */
+  /** Longitudes acumuladas de una polilínea de pantalla (para recorrerla a velocidad pareja). */
+  function withLen(path) {
+    var len = [0], i;
+    for (i = 1; i < path.length; i++) len.push(len[i - 1] + Math.hypot(path[i][0] - path[i - 1][0], path[i][1] - path[i - 1][1]));
+    return { path: path, len: len, L: len[len.length - 1] };
+  }
+
+  /** Punto de una polilínea con longitudes a la distancia d (en píxeles) desde su inicio. */
+  function pointAt(pl, d) {
+    var target = clamp(d, 0, pl.L), i = 1;
+    while (i < pl.len.length - 1 && pl.len[i] < target) i++;
+    var seg = pl.len[i] - pl.len[i - 1] || 1, f = (target - pl.len[i - 1]) / seg;
+    return [pl.path[i - 1][0] + (pl.path[i][0] - pl.path[i - 1][0]) * f, pl.path[i - 1][1] + (pl.path[i][1] - pl.path[i - 1][1]) * f];
+  }
+
+  /* ciclo natural: ruta 1 (superficie) y ruta 2 (riego, acuífero y bombeo); contaminación: seis vertidos antrópicos que se mezclan con río, acuífero y mar */
   function stageDefs() {
+    var rs = crPts2(RIVER, 150), per = 150 / (RIVER.length - 1);
+    /** Tramo del río (índices de puntos de control a..b) a la altura dz sobre el agua. */
+    function riverPath(a, b, dz) { var o = [], i; for (i = Math.round(a * per); i <= Math.round(b * per); i++) o.push(W(rs[i][0], rs[i][1], dz)); return o; }
+    /** Río desde la primera muestra con x >= x0 hasta el mar. */
+    function riverFrom(x0, dz) { var o = [], i; for (i = 0; i < rs.length; i++) if (rs[i][0] >= x0) o.push(W(rs[i][0], rs[i][1], dz)); return o; }
+    /** Curva cuadrática (3 puntos) o recta (2) muestreada. */
+    function curve(p) {
+      var o = [], i, u;
+      for (i = 0; i <= 36; i++) {
+        u = i / 36;
+        o.push(p.length === 3
+          ? [(1 - u) * (1 - u) * p[0][0] + 2 * (1 - u) * u * p[1][0] + u * u * p[2][0], (1 - u) * (1 - u) * p[0][1] + 2 * (1 - u) * u * p[1][1] + u * u * p[2][1]]
+          : [p[0][0] + (p[1][0] - p[0][0]) * u, p[0][1] + (p[1][1] - p[0][1]) * u]);
+      }
+      return o;
+    }
     var R1 = [
-      { n: "Evaporation", d: 3, vap: 1, side: "l", pts: [A(13.6, 1.9, 0.9), A(13.9, 2.5, 1.6), A(13.5, 3.0, 2.7)] },
-      { n: "Condensation", d: 1.6, vap: 1, side: "l", pts: [A(13.5, 3.0, 2.7), A(13.4, 3.3, 3.9)] },
-      { n: "Moisture transport", d: 5.5, vap: 1, side: "r", pts: [A(13.1, 3.4, 3.9), A(7.4, 5.8, 7.4), A(2.9, 5.2, 5.7)] },
-      { n: "Rain & snowmelt", d: 3, side: "r", pts: [A(2.9, 5.2, 5.7), A(2.0, 5.0, 4.4), W(2.35, 4.5, 0.3)] },
-      { n: "Runoff", d: 4.5, side: "r", riv: [0, 5], dz: 0.35 },
-      { n: "Reservoir", d: 3, side: "l", pts: [A(3.6, 3.45, 0.95), A(3.1, 3.0, 0.95), A(4.05, 3.0, 0.97)] },
-      { n: "Spillway", d: 1.8, side: "r", pts: [A(4.05, 3.0, 0.98), A(4.9, 3.0, 1.0), W(5.1, 3.0, 0.3)] },
-      { n: "River", d: 3, side: "r", riv: [7, 10], dz: 0.3 },
-      { n: "Return flow", d: 4, side: "l", riv: [10, 14], dz: 0.3 },
-      { n: "To the sea", d: 1.5, side: "l", riv: [14, 15], dz: 0.3 }
+      { d: 3, vap: 1, pts: [A(13.6, 1.9, 0.9), A(13.9, 2.5, 1.6), A(13.5, 3.0, 2.7)] },
+      { d: 1.6, vap: 1, pts: [A(13.5, 3.0, 2.7), A(13.4, 3.3, 3.9)] },
+      { d: 5.5, vap: 1, pts: [A(13.1, 3.4, 3.9), A(7.4, 5.8, 7.4), A(2.9, 5.2, 5.7)] },
+      { d: 3, pts: [A(2.9, 5.2, 5.7), A(2.0, 5.0, 4.4), W(2.35, 4.5, 0.3)] },
+      { d: 4.5, riv: [0, 5], dz: 0.35 },
+      { d: 3, pts: [A(3.6, 3.45, 0.95), A(3.1, 3.0, 0.95), A(4.05, 3.0, 0.97)] },
+      { d: 1.8, pts: [A(4.05, 3.0, 0.98), A(4.9, 3.0, 1.0), W(5.1, 3.0, 0.3)] },
+      { d: 3, riv: [7, 10], dz: 0.3 },
+      { d: 4, riv: [10, 14], dz: 0.3 },
+      { d: 1.5, riv: [14, 15], dz: 0.3 }
     ];
     var R2 = [
-      { n: "Irrigation", d: 2.5, side: "l", pts: [W(5.5, 2.95, 0.3), W(5.7, 2.7, 0.4), W(5.7, 2.3, 0.4)] },
-      { n: "Infiltration", d: 3, side: "r", pts: [W(5.7, 2.3, 0.2), A(5.7, 0.9, 0.2), A(5.7, 0, -0.45)] },
-      { n: "Groundwater", d: 7, side: "r", pts: [A(5.7, 0, -0.45), A(7.5, 0, -0.6), A(9.4, 0, -0.45)] },
-      { n: "Pumping", d: 3, side: "r", pts: [A(9.4, 0, -0.45), A(9.4, 0.5, 0.2), W(9.35, 1.9, 0.5)] },
-      { n: "City use", d: 2.5, side: "l", pts: [W(9.35, 1.9, 0.5), W(9.55, 2.9, 0.6), W(9.2, 3.3, 0.3)] },
-      { n: "Return flow", d: 3.5, side: "l", riv: [11, 14], dz: 0.3 },
-      { n: "To the sea", d: 1.5, side: "l", riv: [14, 15], dz: 0.3 }
+      { d: 2, riv: [6, 7], dz: 0.3 },
+      { d: 2.5, pts: [W(5.5, 2.95, 0.3), W(5.7, 2.7, 0.4), W(5.7, 2.3, 0.4)] },
+      { d: 3, pts: [W(5.7, 2.3, 0.2), A(5.7, 0.9, 0.2), A(5.7, 0, -0.45)] },
+      { d: 7, pts: [A(5.7, 0, -0.45), A(7.5, 0, -0.6), A(9.4, 0, -0.45)] },
+      { d: 3, pts: [A(9.4, 0, -0.45), A(9.4, 0.5, 0.2), W(9.35, 1.9, 0.5)] },
+      { d: 2.5, pts: [W(9.35, 1.9, 0.5), W(9.55, 2.9, 0.6), W(9.2, 3.3, 0.3)] },
+      { d: 3.5, riv: [11, 14], dz: 0.3 },
+      { d: 1.5, riv: [14, 15], dz: 0.3 }
     ];
-    var rs = crPts2(RIVER, 150), per = 150 / (RIVER.length - 1);
     [R1, R2].forEach(function (R) {
+      var prev = null;
       R.total = 0;
       R.forEach(function (st) {
-        var path = [], i, p, u;
-        if (st.riv) {
-          var a = Math.round(st.riv[0] * per), b = Math.round(st.riv[1] * per);
-          for (i = a; i <= b; i++) path.push(W(rs[i][0], rs[i][1], st.dz));
-        } else {
-          p = st.pts;
-          for (i = 0; i <= 36; i++) {
-            u = i / 36;
-            path.push(p.length === 3
-              ? [(1 - u) * (1 - u) * p[0][0] + 2 * (1 - u) * u * p[1][0] + u * u * p[2][0], (1 - u) * (1 - u) * p[0][1] + 2 * (1 - u) * u * p[1][1] + u * u * p[2][1]]
-              : [p[0][0] + (p[1][0] - p[0][0]) * u, p[0][1] + (p[1][1] - p[0][1]) * u]);
-          }
-        }
-        st.path = path;
-        st.len = [0];
-        for (i = 1; i < path.length; i++) st.len.push(st.len[i - 1] + Math.hypot(path[i][0] - path[i - 1][0], path[i][1] - path[i - 1][1]));
+        var path = st.riv ? riverPath(st.riv[0], st.riv[1], st.dz) : curve(st.pts), pl;
+        if (prev) path.unshift(prev);
+        prev = path[path.length - 1];
+        pl = withLen(path);
+        st.path = pl.path; st.len = pl.len; st.L = pl.L;
         st.t0 = R.total;
         R.total += st.d;
       });
     });
-    return { r1: R1, r2: R2 };
-  }
-
-  /** Punto de una etapa a la fracción u (0 a 1) de su recorrido. */
-  function pointOn(st, u) {
-    var target = st.len[st.len.length - 1] * clamp(u, 0, 1), i = 1;
-    while (i < st.len.length - 1 && st.len[i] < target) i++;
-    var seg = st.len[i] - st.len[i - 1] || 1, f = (target - st.len[i - 1]) / seg;
-    return [st.path[i - 1][0] + (st.path[i][0] - st.path[i - 1][0]) * f, st.path[i - 1][1] + (st.path[i][1] - st.path[i - 1][1]) * f];
+    /* vertidos: n gotas, velocidad en píxeles por segundo, y el punto donde nace el foco */
+    var STAIN = [13.35, 2.85];
+    var POL = [
+      { n: 5, v: 105, src: SRC[0] },
+      { n: 4, v: 105, pts: [W(5.7, 2.35, 0.2), A(5.7, 0.9, 0.2), A(5.7, 0, -0.3), A(7.5, 0, -0.38), A(9.4, 0, -0.3), A(11.5, 0, -0.36), A(13.2, 0, -0.36)] },
+      { n: 3, v: 100, src: SRC[3] },
+      { n: 3, v: 100, src: SRC[1] },
+      { n: 4, v: 100, src: SRC[2] },
+      { n: 3, v: 100, src: SRC[4] },
+      { n: 2, v: 100, src: SRC[5] },
+      { n: 2, v: 100, src: SRC[6] },
+      { n: 2, v: 100, src: SRC[7] }
+    ];
+    POL.forEach(function (P) {
+      var path, pipe = null;
+      if (P.src) {
+        var S = P.src, end = S.sea ? S.sea : riverAtX(S.jx);
+        pipe = [W(S.pt[0], S.pt[1], 0.05)].concat(S.via.map(function (v) { return W(v[0], v[1], 0.05); }), [W(end[0], end[1], 0.2)]);
+        path = pipe.slice();
+        if (S.sea) path.push(W(S.sea[0] + 0.4, S.sea[1], 0.1)); else path = path.concat(riverFrom(end[0] + 0.01, 0.3), [W(STAIN[0], STAIN[1], 0.1)]);
+        P.pts = [path[0]];
+        P.pipeL = withLen(pipe).L;
+      } else path = P.pts.slice();
+      var pl = withLen(path);
+      P.path = pl.path; P.len = pl.len; P.L = pl.L;
+    });
+    return { r1: R1, r2: R2, pol: POL };
   }
 
   var markup = null, refs = null, raf = 0, running = false, startMs = null, seek = 0, frozen = false;
 
-  /** Construye una sola vez el SVG pesado: dos capas de relieve, guías del ciclo, rótulos de lugar, título y gotas. */
+  /** Aleatorio determinista por celda (para que el efecto de píxeles sea idéntico en cada pasada y en las capturas). */
+  function hash2(a, b) { var v = Math.sin(a * 127.1 + b * 311.7) * 43758.5453; return v - Math.floor(v); }
+
+  /** Construye una sola vez el SVG pesado: escena completa, máscara de píxeles, focos de vertido, título y gotas. */
   function buildMarkup() {
-    var flat = diorama({ zk: 0.3, objs: false });
     var full = diorama({ zk: 1, objs: true });
-    var st = stageDefs(), svg = DEFS, i;
-    svg += '<g id="miL0" opacity="0">' + flat + '</g><g id="miL1" opacity="0">' + full + "</g>";
-    var guides = "";
-    st.r1.concat(st.r2).forEach(function (s) {
-      guides += '<path class="mi-guide" d="M' + s.path.filter(function (_, k) { return k % 2 === 0 || k === s.path.length - 1; }).map(pt).join(" L") + '" fill="none" stroke="#2f7f99" stroke-opacity=".42" stroke-width="3.2" stroke-linecap="round" stroke-dasharray="3 10"/>';
-    });
-    svg += '<g id="miGuides" opacity="0">' + guides + "</g>";
-    var PL = [
-      ["Páramo", W(3.5, 4.75, 0), "u"], ["Farmland", W(5.7, 4.25, 0), "u"], ["Rural area", W(6.8, 0.5, 0), "b"], ["Reservoir", A(2.7, 2.9, 0.92), "u"],
-      ["Dam", A(4.45, 1.5, 1.3), "u"], ["City", W(10.0, 4.5, 0), "u"], ["Factory", W(11.65, 5.2, 1.0), "u"], ["Data center", W(11.65, 0.45, 0), "b"],
-      ["Sea", A(13.9, 1.3, 0.55), "u"], ["Aquifer", A(3.0, 0, -0.55), "u"]
-    ];
-    var pl = "";
-    PL.forEach(function (d) { pl += placeSvg(d[1], d[0], d[2]); });
-    svg += '<g id="miPlaces" opacity="0">' + pl + "</g>";
-    svg += '<g id="miTitle" opacity="0"><text x="1860" y="138" text-anchor="end" font-size="92" font-weight="800" letter-spacing="-1" fill="#3d352c">Our Water, Our Choices</text><text x="1860" y="198" text-anchor="end" font-size="36" font-weight="700" fill="#8a7f70">Orlando Bojacá</text></g>';
-    var nd = 6, dr = "";
-    for (i = 0; i < nd; i++) {
-      dr += '<g id="miD' + i + '" opacity="0"><circle r="19" fill="#6fb8c9" fill-opacity=".28"/>' +
-        '<path d="M0,-16 C12,-3 11,10 0,10 C-11,10 -12,-3 0,-16Z" fill="#3f93ad" stroke="#fff" stroke-width="2"/>' +
-        '<g class="mi-lb"><rect x="26" y="-17" width="120" height="34" rx="17" fill="#2f7f99" stroke="#fff" stroke-width="2.4"/><text x="86" y="6.5" text-anchor="middle" font-size="21" font-weight="700" fill="#fff"></text></g></g>';
+    var st = stageDefs(), svg = DEFS, i, j, cells = "", cols = Math.ceil(1920 / CELL), rows = Math.ceil(1080 / CELL), delays = [];
+    for (j = 0; j < rows; j++) for (i = 0; i < cols; i++) {
+      delays.push(0.9 * (1 - (j + 0.5) / rows) + 1.55 * hash2(i, j));
+      cells += '<rect x="' + i * CELL + '" y="' + j * CELL + '" width="' + CELL + '" height="' + CELL + '" fill="#fff" fill-opacity="0" shape-rendering="crispEdges"/>';
     }
-    svg += '<g id="miDrops">' + dr + "</g>";
-    return { svg: svg, stages: st, nd: nd };
+    svg += '<mask id="miMask" maskUnits="userSpaceOnUse" x="0" y="0" width="1920" height="1080"><g id="miCells">' + cells + "</g></mask>";
+    svg += '<g id="miL1" mask="url(#miMask)">' + full + "</g>";
+    var rings = "";
+    st.pol.map(function (P) { return P.pts[0]; }).forEach(function (p, k) {
+      rings += '<circle class="mi-ring" cx="' + f1(p[0]) + '" cy="' + f1(p[1]) + '" r="16" fill="none" stroke="#b8532b" stroke-width="3" style="animation-delay:' + (-k * 0.45) + 's"/>' +
+        '<circle class="mi-pollute" cx="' + f1(p[0]) + '" cy="' + f1(p[1]) + '" r="7" fill="#b8532b" fill-opacity=".5" stroke="none"/>';
+    });
+    svg += '<g id="miRings" opacity="0">' + rings + "</g>";
+    svg += '<g id="miTitle" opacity="0"><text x="1860" y="138" text-anchor="end" font-size="92" font-weight="800" letter-spacing="-1" fill="#3d352c">Our Water, Our Choices</text><text x="1860" y="198" text-anchor="end" font-size="36" font-weight="700" fill="#8a7f70">Orlando Bojacá</text></g>';
+    var drops = "", n1 = 16, n2 = 10, np = 0, k;
+    st.pol.forEach(function (P) { np += P.n; });
+    for (k = 0; k < n1 + n2; k++) drops += '<path id="miD' + k + '" opacity="0" d="M0,-9 C7,-2 6,6 0,6 C-6,6 -7,-2 0,-9Z" fill="#3f93ad" stroke="#fff" stroke-width="1.4" stroke-linejoin="round"/>';
+    for (k = 0; k < np; k++) drops += '<path id="miP' + k + '" opacity="0" d="M0,-8 C6,-2 6,5 0,5 C-6,5 -6,-2 0,-8Z" fill="#b8532b" stroke="#f6e4d4" stroke-width="1.3" stroke-linejoin="round"/>';
+    svg += '<g id="miDrops">' + drops + "</g>";
+    return { svg: svg, stages: st, n1: n1, n2: n2, np: np, delays: delays, cols: cols, rows: rows };
   }
 
-  /** Dibuja un instante t (segundos desde que arranca la diapositiva): el bloque sube y, después, las gotas siguen el ciclo. */
+  /** Dibuja un instante t (segundos desde que arranca la diapositiva): el bloque aparece en píxeles y, después, las gotas siguen el ciclo. */
   function render(t) {
-    var r = refs, a0 = smooth(0.2, 2.6, t), a1 = smooth(2.2, 4.4, t), i;
-    r.l0.setAttribute("opacity", f1(a0 * (1 - smooth(3, 4.6, t))));
-    r.l0.setAttribute("transform", "translate(0 " + f1((1 - a0) * 300) + ")");
-    r.l1.setAttribute("opacity", f1(a1));
-    r.l1.setAttribute("transform", "translate(0 1080) scale(1 " + f1(0.9 + 0.1 * smooth(2.2, 4.8, t)) + ") translate(0 -1080)");
-    var ti = smooth(0.5, 1.6, t);
+    var r = refs, i;
+    if (!r.done) {
+      for (i = 0; i < r.cells.length; i++) {
+        var o = smooth(markup.delays[i], markup.delays[i] + 0.4, t);
+        if (o !== r.cellOp[i]) { r.cellOp[i] = o; r.cells[i].setAttribute("fill-opacity", f1(o * 100) / 100); }
+      }
+      if (t >= REVEAL + 0.1) { r.l1.removeAttribute("mask"); r.done = true; }
+    }
+    var ti = smooth(0.3, 1.4, t);
     r.title.setAttribute("opacity", f1(ti));
     r.title.setAttribute("transform", "translate(0 " + f1((1 - ti) * 18) + ")");
-    var fo = smooth(4.6, 5.6, t);
-    r.places.setAttribute("opacity", f1(fo));
-    r.guides.setAttribute("opacity", f1(fo));
-    var S = markup.stages, routes = [{ R: S.r1, n: 4, off: 0 }, { R: S.r2, n: 2, off: 3 }], k = 0, ri, j;
+    var fo = smooth(REVEAL - 0.2, REVEAL + 0.8, t);
+    r.rings.setAttribute("opacity", f1(fo));
+    var S = markup.stages, k = 0, ri, j, g, p, s, u;
+    var routes = [{ R: S.r1, n: markup.n1 }, { R: S.r2, n: markup.n2 }];
     for (ri = 0; ri < routes.length; ri++) {
-      var Rt = routes[ri], R = Rt.R, sp = R.total / Rt.n;
-      for (j = 0; j < Rt.n; j++, k++) {
-        var g = r.drops[k], ph = ((t - RISE + Rt.off + j * sp) % R.total + R.total) % R.total, si = 0;
+      var R = routes[ri].R, n = routes[ri].n, sp = R.total / n;
+      for (j = 0; j < n; j++, k++) {
+        g = r.water[k];
+        var ph = (((t - REVEAL + ri * 1.3 + j * sp) % R.total) + R.total) % R.total, si = 0;
         while (si < R.length - 1 && R[si + 1].t0 <= ph) si++;
-        var s = R[si], loc = ph - s.t0, u = loc / s.d, p = pointOn(s, u);
-        var vis = smooth(RISE - 0.2 + k * 0.5, RISE + 0.6 + k * 0.5, t) * (si === 0 ? smooth(0, 0.5, loc) : 1) * (si === R.length - 1 ? smooth(s.d, s.d - 0.5, loc) : 1);
-        var lab = Math.min(smooth(0, 0.6, loc), smooth(s.d, s.d - 0.6, loc));
-        g.root.setAttribute("opacity", f1(vis));
-        g.root.setAttribute("transform", "translate(" + f1(p[0]) + " " + f1(p[1]) + ")");
-        if (g.si !== ri * 100 + si) {
-          g.si = ri * 100 + si;
-          var wdt = s.n.length * 12.2 + 28, left = s.side === "l";
-          g.txt.textContent = s.n;
-          g.rect.setAttribute("width", f1(wdt));
-          g.rect.setAttribute("x", f1(left ? -26 - wdt : 26));
-          g.txt.setAttribute("x", f1(left ? -26 - wdt / 2 : 26 + wdt / 2));
-          g.drop.setAttribute("fill", s.vap ? "#fff" : "#3f93ad");
-          g.drop.setAttribute("stroke", s.vap ? "#3f93ad" : "#fff");
-        }
-        g.lb.setAttribute("opacity", f1(lab));
+        s = R[si]; u = (ph - s.t0) / s.d; p = pointAt(s, s.L * u);
+        var vis = smooth(REVEAL - 0.3 + (k % 7) * 0.12, REVEAL + 0.6 + (k % 7) * 0.12, t) * (si === 0 ? smooth(0, 0.6, ph - s.t0) : 1) * (si === R.length - 1 ? smooth(s.d, s.d - 0.6, ph - s.t0) : 1);
+        g.el.setAttribute("opacity", f1(vis));
+        g.el.setAttribute("transform", "translate(" + f1(p[0]) + " " + f1(p[1]) + ") scale(" + g.sc + ")");
+        var key = ri * 100 + si;
+        if (g.si !== key) { g.si = key; var c = s.vap ? VAPOR : WATER; g.el.setAttribute("fill", c.fill); g.el.setAttribute("stroke", c.stroke); }
       }
     }
+    k = 0;
+    S.pol.forEach(function (P) {
+      var q, sp2 = P.L / P.n;
+      for (q = 0; q < P.n; q++, k++) {
+        g = r.dirty[k];
+        var d = ((((t - REVEAL) * P.v + q * sp2) % P.L) + P.L) % P.L;
+        p = pointAt(P, d);
+        var vp = smooth(REVEAL - 0.1 + (k % 5) * 0.15, REVEAL + 0.8 + (k % 5) * 0.15, t) * smooth(0, 50, d) * smooth(P.L, P.L - 60, d) * (P.pipeL && d < P.pipeL ? 0.5 : 1);
+        g.el.setAttribute("opacity", f1(vp));
+        g.el.setAttribute("transform", "translate(" + f1(p[0]) + " " + f1(p[1]) + ") scale(" + g.sc + ")");
+      }
+    });
   }
 
   /** Bucle de animación: avanza el reloj y redibuja; con ?freeze=1 queda fijo en el segundo ?mt=. */
@@ -867,12 +1031,11 @@
     var qs = window.location.search || "", m = /[?&]mt=([0-9.]+)/.exec(qs), i;
     seek = m ? parseFloat(m[1]) : 0;
     frozen = /[?&]freeze=1/.test(qs);
-    container.innerHTML = '<svg class="mi-world" viewBox="0 0 1920 1080" role="img" aria-label="A block of land rises with a snow-capped mountain, a páramo, a reservoir, farmland, a city, a factory and a data center beside the sea; many drops of water travel at the same time through evaporation, clouds, rain, runoff, irrigation, groundwater, pumping and return flow, forming one connected cycle.">' + markup.svg + "</svg>";
-    refs = { l0: container.querySelector("#miL0"), l1: container.querySelector("#miL1"), title: container.querySelector("#miTitle"), places: container.querySelector("#miPlaces"), guides: container.querySelector("#miGuides"), drops: [] };
-    for (i = 0; i < markup.nd; i++) {
-      var root = container.querySelector("#miD" + i);
-      refs.drops.push({ root: root, drop: root.querySelector("path"), lb: root.querySelector(".mi-lb"), rect: root.querySelector("rect"), txt: root.querySelector("text"), si: -1 });
-    }
+    container.innerHTML = '<svg class="mi-world" viewBox="0 0 1920 1080" role="img" aria-label="A block of land appears pixel by pixel: a snow-capped mountain with a páramo, a reservoir, farmland, a city, a factory and a data center beside the sea, with animals and people. Many small drops of water flow through the natural cycle, and rust-colored drops from farms, the city, the factory and the data center mix into the river, the aquifer and the sea.">' + markup.svg + "</svg>";
+    refs = { l1: container.querySelector("#miL1"), title: container.querySelector("#miTitle"), rings: container.querySelector("#miRings"), cells: container.querySelectorAll("#miCells rect"), cellOp: [], water: [], dirty: [], done: false };
+    for (i = 0; i < refs.cells.length; i++) refs.cellOp.push(-1);
+    for (i = 0; i < markup.n1 + markup.n2; i++) refs.water.push({ el: container.querySelector("#miD" + i), si: -1, sc: f1(0.8 + 0.3 * hash2(i, 5)) });
+    for (i = 0; i < markup.np; i++) refs.dirty.push({ el: container.querySelector("#miP" + i), sc: f1(0.8 + 0.3 * hash2(i, 9)) });
     if (restart || startMs === null) startMs = window.performance ? window.performance.now() : Date.now();
     running = true;
     raf = window.requestAnimationFrame(frame);

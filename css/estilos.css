@@ -1738,3 +1738,23 @@ body.speaker-standalone .speaker-panel {
 .intro-canvas .mi-guide {
   animation: miSlide 1.8s linear infinite !important;
 }
+
+/* contaminación: el río y el mar se tiñen de óxido y los focos de vertido laten */
+.intro-canvas .mi-pollute {
+  animation: miPollute 4.2s ease-in-out infinite !important;
+}
+
+.intro-canvas .mi-ring {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: miRing 2.6s ease-out infinite !important;
+}
+
+@keyframes miPollute { 0%, 100% { stroke-opacity: 0.22; fill-opacity: 0.22; } 50% { stroke-opacity: 0.6; fill-opacity: 0.55; } }
+@keyframes miRing { 0% { transform: scale(0.35); opacity: 0.9; } 100% { transform: scale(1.6); opacity: 0; } }
+
+.intro-canvas .mi-stain {
+  animation: miStain 5s ease-in-out infinite !important;
+}
+
+@keyframes miStain { 0%, 100% { fill-opacity: 0.42; } 50% { fill-opacity: 0.78; } }
