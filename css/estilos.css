@@ -1734,3 +1734,7 @@ body.speaker-standalone .speaker-panel {
 @keyframes miBob { 50% { transform: translateY(-4px); } }
 @keyframes miSway { 50% { transform: rotate(1.6deg); } }
 @keyframes miWarm { 0%, 100% { fill-opacity: 0.4; } 50% { fill-opacity: 0.75; } }
+
+.intro-canvas .mi-guide {
+  animation: miSlide 1.8s linear infinite !important;
+}

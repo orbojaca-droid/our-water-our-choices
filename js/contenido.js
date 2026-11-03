@@ -71,13 +71,13 @@
       culturalDecision: null,
       colombiaZoom: null,
       altText:
-        "A turning globe rises into a wide block of land where one drop of water travels from the ocean through clouds, mountains, a farm, a city, a factory and a data center, and back to the sea, among animals and communities.",
+        "A wide block of land rises from the bottom of the slide: a snow-capped mountain with a páramo, a reservoir, farmland, a city with a factory and a data center, and the sea. Many drops of water travel at the same time through one connected cycle.",
       footerSources: "",
       ledgerIds: [],
       speaker: {
         propCue: "Utilería: ten el vaso de agua sobre la mesa; puedes tomar el sorbo en 'the glass of water you drank today'.",
         englishSteps: [
-          "[Mientras el globo gira.] Good morning. Think about the glass of water you drank today. [Un trozo del mundo se levanta.] Where did it come from? [La gota viaja entre animales y comunidades.] And where will it go next? It may cross a farm, a factory, a data center, a city… [El globo cierra.] Today I will show you that this journey is not a straight line. It is one connected web. [Pulsa → para ir a la diapositiva 1 y empieza en 'Our bodies are about sixty percent water'.]"
+          "[Mientras la tierra sube.] Good morning. Think about the glass of water you drank today. [Aparecen las primeras gotas.] Where did it come from? [Muchas gotas se cruzan a la vez.] And where will it go next? It may cross a farm, a factory, a data center, a city… [El ciclo sigue sin parar.] Today I will show you that this journey is not a straight line. It is one connected web. [Pulsa → para ir a la diapositiva 1 y empieza en 'Our bodies are about sixty percent water'.]"
         ],
         spanishNotes:
           "Haz la pregunta mientras la animación corre: piensen en el vaso de agua de hoy, de dónde vino y a dónde irá. Menciona que puede pasar por un campo, una fábrica, un centro de datos y una ciudad, entre animales y comunidades, y que el recorrido no es una línea recta sino una red conectada. Al terminar, pulsa la flecha derecha. En la diapositiva 1 NO repitas el saludo ni la primera pregunta: arranca en 'Our bodies are about sixty percent water'.",
